@@ -176,7 +176,7 @@ void cxComponentGenCode(CxComponent self, FILE *fp, int indent)
 	fprintf(fp, "\n");
 	printIndent(fp, indent, " ");
 	if(!strcmp(self->face,"CODE")){
-		fprintf(fp, "/* raw code */ %s\n", self->code);
+		fprintf(fp, " %s \n", self->code);
 	}else{
 		fprintf(fp, "heNew(\"%s\"", self->face);
 		cxAttributeListGenCode(self->attrlist, fp, indent);
