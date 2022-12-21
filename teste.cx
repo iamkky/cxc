@@ -1,0 +1,21 @@
+#include <helium/He.h>
+
+He modal(char *v1, char *v2, char *v3, char *i)
+{
+	return 
+		{%
+		<div>
+			<div name="t1">
+				<div />
+				<div class="tab" name={v1} />
+				<div class="tab1" name="test2">
+					<div class="tab2" name="viewline" />
+					<div class="tab2" name={strf("%s%s", v2, v3)} />
+					<div class="tab2" name={i} />
+				</div>
+			</div>
+			<div />
+			<div />
+		</div>
+		%};
+}

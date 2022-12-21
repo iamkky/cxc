@@ -1,0 +1,113 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+#include "cx_component.h"
+#include "cx_parser.h"
+#include "cx_parser.tokens.h"
+#include "cx_lex.h"
+
+#define TOKENDEBUG 1
+
+// Lex Helper function
+
+static char *getCode(char *input, int *cursor, int *lcount, char **line_start)
+{
+char *tmp, *p, last;
+int  count, level, string, character, escaped;
+
+	if(*(p=input++)!='{') return NULL;
+
+	count = level = string = character = escaped = 0;
+
+	while((last = *input++)){
+		count++;
+		if(last=='\n') {
+			if(lcount) *lcount = *lcount + 1;
+			if(line_start) *line_start = input;
+		}
+		if(escaped){
+			escaped = 0;
+		}else if(character==0 && last=='"'){
+			if(string == 0) string = 1; else string = 0;
+		}else if(string==1 && last=='\\'){
+			escaped = 1;
+		}else if(string==0 && last=='\''){
+			if(character == 0) character = 1; else character = 0;
+		}else if(character==1 && last=='\\'){
+			escaped = 1;
+		}else if(!string && !character && last=='{'){
+			level++;
+		}else if(!string && !character && last=='}'){
+			if(level--==0) break;
+		}
+	}
+
+	if(last>0){
+		if((tmp = malloc(count))==NULL) return NULL;
+		strncpy(tmp, p+1, count-1);
+		tmp[count-1] = 0;
+	}else{
+		tmp=strdup("");
+	}
+
+	(*cursor) += count;
+	return tmp;
+}
+
+static char *getString(char *input, int *cursor, char escape, char closure)
+{
+char *tmp, *newtmp, *p, last;
+int  size, used, count;
+
+	if((p = tmp = malloc(size = 128))==NULL) return NULL;
+	*p = used = count = 0;
+
+	if(*input++!=closure) return tmp;
+
+	while((last = (*p++ = *input++))){
+		count++;
+		if(last==closure){
+			*(p-1)=0;
+			break;
+		}else if(last==escape && *input==closure) {
+			*(p-1)=closure;
+			input++;
+			count++;
+		}
+		if(++used>=size-1) {
+			if((newtmp = realloc(tmp, size = (2 * size)))==NULL) {
+				free(tmp);
+				return NULL;
+			}
+			p = (tmp = newtmp) + count;
+		}
+	}
+
+	(*cursor)+=count;
+	return tmp;
+}
+
+
+%%cx_lex CxParserType
+
+%define D	0-9
+%define i	A-Za-z_
+%define I	0-9A-Za-z_
+
+NULL		: value->str = NULL; return TKNULL;
+</		: value->str = NULL; return OPENSLASH;
+/>		: value->str = NULL; return SLASHCLOSE;
+=		: value->str = NULL; return EQUAL;
+<		: value->str = NULL; return OPEN;
+>		: value->str = NULL; return CLOSE;
+"		: value->str = getString(input, cursor, '\\', '\"'); return STRING;
+{		: value->str = getCode(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODE;
+\i\I*		: value->str = nrDupToken(input,size); return ID;
+\s		: 
+\n		: ((CxParserExtraDataType *)extra)->lnumber += 1; ((CxParserExtraDataType *)extra)->line_start = input + 1;
+\t		: 
+\r		: 
+
+
