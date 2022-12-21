@@ -29,16 +29,15 @@ compiles to:
 	He mkImg(char *src)
 	{
 		return
-	heNEw("img",heAttrNew("src",src),NULL);
+		heNEw("img",heAttrNew("src",src),NULL);
 	}
 
 	He mkDiv(char *class, He content)
 	{
-	return
-	heNew("div",heAttrNew("class",class),
-	content
-
-	,NULL);
+		return
+		heNew("div",heAttrNew("class",class),
+		content
+		,NULL);
 	}
 
 	He DivWithImage(char *class, char *src)
