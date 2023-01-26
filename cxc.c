@@ -59,16 +59,52 @@ int size;
 	fprintf(stderr,"Error: Backtracking failed:  %d (%s)\n", nonterminal, Rdpp_CxParserNonterminals_Names[nonterminal-10000]);
 }
 
+int processFragment(char *p, CxParserExtraDataType *extra)
+{
+CxParser		cx;
+CxComponentList		list;
+int			result;
+int			count;
+
+	if (vvflag) fprintf(stderr,"Fragment found %d: >%-20.20s<\n", extra->lnumber, p);
+	cx = CxParserNew(p, extra);	
+
+	CxParserSetUnexpected(cx, unexpected_handler);
+	CxParserSetBacktrackFail(cx, backtrackFail_handler);
+	
+	result = CxParserParse(cx);
+		
+	//fprintf(stdout,"Input Size: %d\n", bytes);
+	//fprintf(stdout,"cursor: %d\n", cx->cursor);
+	//fprintf(stdout,"Last Token: %d\n", cx->currToken);
+			
+	if(result>0){
+		//fprintf(stdout,"\nResult:\n");
+		//fprintf(stdout,"\nPrint:\n");
+		//cxComponentListPrint(list, stdout, 0);
+		//fprintf(stdout,"\nCode:\n");
+		list = cx->value[0].complist;
+		cxComponentListGenCode(list, stdout, 0);
+		p += (count = cx->cursor);
+	}else{
+		fprintf(stderr,"Failed to parse line %d\n", extra->lnumber);
+	 	printLine(stderr, extra->line_start);
+	}
+	
+	CxParserFree(cx);
+		
+	return count;
+}
+
+enum states {ST_SCANNING, ST_COMMENT_C, ST_COMMENT_CPP, ST_STRING};
 
 int main(int argc, char **argv)
 {
-CxParser		cx;
 CxParserExtraDataType	extra;
-CxComponentList		list;
 char			*buffer, *p;
-int			bytes, result, lcount;
+int			bytes;
+int			state;
 
-	//bytes = read(0, buffer, 32767);
 	buffer = readToBuffer(0, 32768, 1, &bytes);
 	buffer[bytes] = 0;
 
@@ -76,55 +112,114 @@ int			bytes, result, lcount;
 
 	extra.lnumber = 1;
 	extra.line_start = buffer;
+	extra.source = NULL;
+
+	state = ST_SCANNING;
 
 	while(*p!=0){
+		switch(state){
+		case ST_SCANNING:
+			if(*p=='{' && *(p+1)=='%'){
+				p += 2;
+				p += processFragment(p, &extra);
 
-		if(*p!='{' || (*p=='{' && *(p+1)!='%')){
-			if(*p=='\n') {
-				extra.lnumber++;
-				extra.line_start = p + 1;
+				if(*p=='%' && *(p+1)=='}'){
+					p += 2;
+				}else{
+					fprintf(stderr,"Missing %} at %d\n", extra.lnumber);
+			 		printLine(stderr, extra.line_start);
+				}
+
+				continue;
 			}
-			fputc(*p++, stdout);
-			continue;
-		}
-
-		p += 2;
-
-		if (vvflag) fprintf(stderr,"Fragment found %d: >%-20.20s<\n", extra.lnumber, p);
-		cx = CxParserNew(p, &extra);	
-
-		CxParserSetUnexpected(cx, unexpected_handler);
-		CxParserSetBacktrackFail(cx, backtrackFail_handler);
-	
-		result = CxParserParse(cx);
-	
-		//fprintf(stdout,"Input Size: %d\n", bytes);
-		//fprintf(stdout,"cursor: %d\n", cx->cursor);
-		//fprintf(stdout,"Last Token: %d\n", cx->currToken);
-	
-		if(result>0){
-  			//fprintf(stdout,"\nResult:\n");
-			//fprintf(stdout,"\nPrint:\n");
-			//cxComponentListPrint(list, stdout, 0);
-			//fprintf(stdout,"\nCode:\n");
-			list = cx->value[0].complist;
-			cxComponentListGenCode(list, stdout, 0);
-			p += cx->cursor;
-		}else{
-			fprintf(stderr,"Failed to parse line %d\n", extra.lnumber);
-		 	printLine(stderr, extra.line_start);
-			exit(-1);
-		}
+/*
+				p += 2;
 		
-		if(*p!='%' || (*p=='%' && *(p+1)!='}')){
-			fprintf(stderr,"Missing %} at %d\n", extra.lnumber);
-		 	printLine(stderr, extra.line_start);
-			exit(-1);
+				if (vvflag) fprintf(stderr,"Fragment found %d: >%-20.20s<\n", extra.lnumber, p);
+				cx = CxParserNew(p, &extra);	
+		
+				CxParserSetUnexpected(cx, unexpected_handler);
+				CxParserSetBacktrackFail(cx, backtrackFail_handler);
+			
+				result = CxParserParse(cx);
+			
+				//fprintf(stdout,"Input Size: %d\n", bytes);
+				//fprintf(stdout,"cursor: %d\n", cx->cursor);
+				//fprintf(stdout,"Last Token: %d\n", cx->currToken);
+			
+				if(result>0){
+		  			//fprintf(stdout,"\nResult:\n");
+					//fprintf(stdout,"\nPrint:\n");
+					//cxComponentListPrint(list, stdout, 0);
+					//fprintf(stdout,"\nCode:\n");
+					list = cx->value[0].complist;
+					cxComponentListGenCode(list, stdout, 0);
+					p += cx->cursor;
+				}else{
+					fprintf(stderr,"Failed to parse line %d\n", extra.lnumber);
+				 	printLine(stderr, extra.line_start);
+					exit(-1);
+				}
+	
+				CxParserFree(cx);
+				
+				if(*p!='%' || (*p=='%' && *(p+1)!='}')){
+					fprintf(stderr,"Missing %} at %d\n", extra.lnumber);
+				 	printLine(stderr, extra.line_start);
+					exit(-1);
+				}
+		
+				p += 2;
+				continue;
+			}
+*/
+
+			if(*p=='/' && *(p+1)=='*'){
+				fputc(*p++, stdout);
+				state = ST_COMMENT_C;
+			}
+
+			if(*p=='/' && *(p+1)=='/'){
+				fputc(*p++, stdout);
+				state = ST_COMMENT_CPP;
+			}
+			
+			if(*p=='"'){
+				state = ST_STRING;
+			}
+
+			break;
+
+		case ST_COMMENT_C:
+			if(*p=='*' && *(p+1)=='/'){
+				fputc(*p++, stdout);
+				state = ST_SCANNING;
+			}
+			break;
+
+		case ST_COMMENT_CPP:
+			if(*p=='\n'){
+				fputc(*p++, stdout);
+				state = ST_SCANNING;
+			}
+			break;
+
+		case ST_STRING:
+			if(*p=='\\' && *(p+1)=='"'){
+				fputc(*p++, stdout);
+			}
+			if(*p=='"'){
+				state = ST_SCANNING;
+			}
+			break;
 		}
 
-		p += 2;
+		if(*p=='\n') {
+			extra.lnumber++;
+			extra.line_start = p + 1;
+		}
 
-		CxParserFree(cx);
+		fputc(*p++, stdout);
 	}	
 	free(buffer);
 }

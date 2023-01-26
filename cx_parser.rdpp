@@ -50,6 +50,7 @@ union {
 	struct {
 		int lnumber;
 		char *line_start;
+		char *source;
 	}
 }
 

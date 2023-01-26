@@ -1,5 +1,10 @@
 #include <helium/He.h>
 
+/*
+	teste
+	{% <h1> </h1> %} 
+*/
+
 He modal(char *v1, char *v2, char *v3, char *i)
 {
 	return 
