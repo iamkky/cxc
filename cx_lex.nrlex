@@ -8,21 +8,19 @@
 #include "cx_parser.tokens.h"
 #include "cx_lex.h"
 
-#define TOKENDEBUG 1
+// Lex Helper function)
 
-// Lex Helper function
-
-static char *getCode(char *input, int *cursor, int *lcount, char **line_start)
+static char *getCode(char *input, int *count, char start, char end, int *lcount, char **line_start)
 {
 char *tmp, *p, last;
-int  count, level, string, character, escaped;
+int  level, string, character, escaped;
 
-	if(*(p=input++)!='{') return NULL;
+	if(*(p=input++)!=start) return NULL;
 
-	count = level = string = character = escaped = 0;
+	*count = level = string = character = escaped = 0;
 
 	while((last = *input++)){
-		count++;
+		(*count)++;
 		if(last=='\n') {
 			if(lcount) *lcount = *lcount + 1;
 			if(line_start) *line_start = input;
@@ -37,23 +35,56 @@ int  count, level, string, character, escaped;
 			if(character == 0) character = 1; else character = 0;
 		}else if(character==1 && last=='\\'){
 			escaped = 1;
-		}else if(!string && !character && last=='{'){
+		}else if(!string && !character && last==start){
 			level++;
-		}else if(!string && !character && last=='}'){
+		}else if(!string && !character && last==end){
 			if(level--==0) break;
 		}
 	}
 
 	if(last>0){
-		if((tmp = malloc(count))==NULL) return NULL;
-		strncpy(tmp, p+1, count-1);
-		tmp[count-1] = 0;
+		if((tmp = malloc(*count))==NULL) return NULL;
+		strncpy(tmp, p+1, *count-1);
+		tmp[*count-1] = 0;
 	}else{
 		tmp=strdup("");
 	}
 
-	(*cursor) += count;
 	return tmp;
+}
+
+static char *getCodeRaw(char *input, int *cursor, int *lcount, char **line_start)
+{
+char	*code;
+int	count;
+
+	code = getCode(input, &count, '{', '}', lcount, line_start);
+	(*cursor) += count;
+
+	return code;
+}
+
+static char *getCodeText(char *input, int *cursor, int *lcount, char **line_start)
+{
+char	*code;
+int	count;
+
+	code = getCode(input, &count, '[', ']', lcount, line_start);
+	(*cursor) += count;
+
+	return code;
+}
+
+static char *getCodeTextf(char *input, int *cursor, int *lcount, char **line_start)
+{
+char	*code;
+int	count;
+
+	if(*input++!='[') return NULL;
+	code = getCode(input, &count, '[', ']', lcount, line_start);
+	(*cursor) += (count+1);
+
+	return code;
 }
 
 static char *getString(char *input, int *cursor, char escape, char closure)
@@ -103,7 +134,9 @@ NULL		: value->str = NULL; return TKNULL;
 <		: value->str = NULL; return OPEN;
 >		: value->str = NULL; return CLOSE;
 "		: value->str = getString(input, cursor, '\\', '\"'); return STRING;
-{		: value->str = getCode(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODE;
+{		: value->str = getCodeRaw(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODERAW;
+[[		: value->str = getCodeTextf(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODETEXTF;
+[		: value->str = getCodeText(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODETEXT;
 \i\I*		: value->str = nrDupToken(input,size); return ID;
 \s		: 
 \n		: ((CxParserExtraDataType *)extra)->lnumber += 1; ((CxParserExtraDataType *)extra)->line_start = input + 1;

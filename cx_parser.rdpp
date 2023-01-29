@@ -33,6 +33,8 @@ void static safe_free(void *ptr)
 	if(ptr) free(ptr);
 }
 
+enum CX_CONTEXTS {CX_CTX_NORMAL, CX_CTX_TAG};
+
 
 %%CxParser component_list cx_lex
 union {
@@ -48,9 +50,10 @@ union {
 
 %%extra { 
 	struct {
-		int lnumber;
-		char *line_start;
-		char *source;
+		int	lnumber;
+		char	*line_start;
+		char	*source;
+		int	context;
 	}
 }
 
@@ -63,12 +66,6 @@ component_list:
 		if(terms[0].comp) result.complist->component = terms[0].comp;
 		if(terms[1].complist) result.complist->next = terms[1].complist;
 	}
-	| CODE component_list {
-		result.complist = cxComponentListNew();
-		//if(terms[0].comp) result.complist->component = terms[0].comp;
-		if(terms[0].str) result.complist->component = cxComponentNew("CODE", terms[0].str, terms[3].complist);
-		if(terms[1].complist) result.complist->next = terms[1].complist;
-	}
 	| {
 		result.complist = NULL;
 	}
@@ -79,6 +76,18 @@ component:
 		result.comp = cxComponentNew(terms[1].str, NULL, terms[3].complist);
 		result.comp->attrlist = terms[2].attrlist;
 		safe_free(terms[1].str);
+	}
+	| CODERAW {
+		result.comp = cxComponentNew("CODE", terms[0].str, NULL);
+		safe_free(terms[0].str);
+	}
+	| CODETEXT {
+		result.comp = cxComponentNew("TEXT", terms[0].str, NULL);
+		safe_free(terms[0].str);
+	}
+	| CODETEXTF {
+		result.comp = cxComponentNew("TEXTF", terms[0].str, NULL);
+		safe_free(terms[0].str);
 	}
 	;
 
@@ -115,7 +124,7 @@ expr:
 		result.str = strf("\"%s\"",terms[0].str); 
 		free(terms[0].str);
 	}
-	| CODE {
+	| CODERAW {
 		result.str = strdup(terms[0].str); 
 		free(terms[0].str);
 	}

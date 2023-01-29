@@ -2,10 +2,9 @@
 
 /*
 	teste
-	{% <h1> </h1> %} 
 */
 
-He modal(char *v1, char *v2, char *v3, char *i)
+He example1(char *v1, char *v2, char *v3, char *i)
 {
 	return 
 		{%
@@ -23,4 +22,48 @@ He modal(char *v1, char *v2, char *v3, char *i)
 			<div />
 		</div>
 		%};
+	
 }
+
+
+
+He this_is_love()
+{
+He child = heText("This is Love");
+char *text = "This is Love";
+
+	return {%
+	<div>
+		<div>
+			{ child }
+		</div>
+		<div>
+			[ text ]
+		</div>
+		<div>
+			[ "This is Love" ]
+		</div>
+		<div>
+			[[ "%s", "This is Love" ]]
+		</div>
+	</div>
+	%};
+}
+
+He this_is_love_all_of_them()
+{
+He child = heText("This is Love");
+char *text = "This is Love";
+
+	return {%
+	<div>
+		<div>
+			{ child }
+			[ text ]
+			[ "This is Love" ]
+			[[ "%s", "This is Love" ]]
+		</div>
+	</div>
+	%};
+}
+

@@ -7,7 +7,7 @@
 #include "cx_parser.h"
 #include "cx_parser.tokens.h"
 
-static int vvflag = 0;
+static int vvflag = 1;
 
 char *readToBuffer(int fd, int inisize, int extrasize, int *readsize)
 {
