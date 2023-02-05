@@ -5,6 +5,7 @@
 
 #include "cx_component.h"
 #include "cx_parser.h"
+#include "cx_parser.extra.h"
 #include "cx_parser.tokens.h"
 #include "cx_lex.h"
 
@@ -15,9 +16,9 @@ static char *getCode(char *input, int *count, char start, char end, int *lcount,
 char *tmp, *p, last;
 int  level, string, character, escaped;
 
-	if(*(p=input++)!=start) return NULL;
-
 	*count = level = string = character = escaped = 0;
+
+	if(*(p=input++)!=start) return NULL;
 
 	while((last = *input++)){
 		(*count)++;
@@ -80,8 +81,8 @@ static char *getCodeTextf(char *input, int *cursor, int *lcount, char **line_sta
 char	*code;
 int	count;
 
-	if(*input++!='[') return NULL;
-	code = getCode(input, &count, '[', ']', lcount, line_start);
+	if(*input++!='{') return NULL;
+	code = getCode(input, &count, '{', '}', lcount, line_start);
 	(*cursor) += (count+1);
 
 	return code;
@@ -120,6 +121,77 @@ int  size, used, count;
 	return tmp;
 }
 
+int isInvalidTextChar(char *input)
+{
+	if(*input=='<') return 1;
+	if(*input=='{') return 1;
+	if(*input=='[') return 1;
+	if(*input=='%' && *(input+1)=='}') return 1;
+	return 0;
+}
+
+static char *getText(char *input, int *cursor, int *lcount, char **line_start)
+{
+char *tmp, *newtmp, *p;
+int  size, count;
+
+	if((p = tmp = malloc(size = 128))==NULL) return NULL;
+	count = 0;
+
+	while(*input!=0){
+		if(*input=='\n') {
+			if(lcount) *lcount = *lcount + 1;
+			if(line_start) *line_start = input;
+		}
+		if(*input=='%' && *(input+1)=='}'){
+			break;
+		}
+		if(*input=='<'){
+			break;
+		}
+		if(*input=='{'){
+			break;
+		}
+		if(*input=='['){
+			break;
+		}
+		if(count>=size-1){
+			if((newtmp = realloc(tmp, size = (2 * size)))==NULL) {
+				free(tmp);
+				return NULL;
+			}
+			p = (tmp = newtmp) + count;
+		}
+		if(*input=='\\' && *(input+1)=='%'){
+			*p++ = '%';
+			input += 2;
+			count += 2;
+		}else if(*input=='\\' && *(input+1)=='<'){
+			*p++ = '<';
+			input += 2;
+			count += 2;
+		}else if(*input=='\\' && *(input+1)=='{'){
+			*p++ = '{';
+			input += 2;
+			count += 2;
+		}else if(*input=='\\' && *(input+1)=='['){
+			*p++ = '[';
+			input += 2;
+			count += 2;
+		}else{
+			*p++ = *input++;
+			count++;
+		}
+	}
+
+	*p=0;
+
+	(*cursor)+=(count-1);
+	return tmp;
+}
+
+//.		: if(*input=='%') ABORT; value->str = getText(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return TEXT;
+
 
 %%cx_lex CxParserType
 
@@ -134,13 +206,14 @@ NULL		: value->str = NULL; return TKNULL;
 <		: value->str = NULL; return OPEN;
 >		: value->str = NULL; return CLOSE;
 "		: value->str = getString(input, cursor, '\\', '\"'); return STRING;
+{{		: value->str = getCodeTextf(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODETEXTF;
 {		: value->str = getCodeRaw(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODERAW;
-[[		: value->str = getCodeTextf(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODETEXTF;
-[		: value->str = getCodeText(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODETEXT;
-\i\I*		: value->str = nrDupToken(input,size); return ID;
+[		: value->str = getCodeText(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODEELEMENT;
+\i\I*		: if(((CxParserExtraDataType *)extra)->context != CX_CTX_TAG) ABORT; value->str = nrDupToken(input,size); return ID;
 \s		: 
 \n		: ((CxParserExtraDataType *)extra)->lnumber += 1; ((CxParserExtraDataType *)extra)->line_start = input + 1;
 \t		: 
 \r		: 
+.		: if(((CxParserExtraDataType *)extra)->context != CX_CTX_NORMAL || isInvalidTextChar(input)) ABORT; value->str = getText(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return RAWTEXT;
 
 

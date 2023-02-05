@@ -8,6 +8,7 @@
 #include "cx_component.h"
 
 #include "cx_parser.h"
+#include "cx_parser.extra.h"
 #include "cx_parser.tokens.h"
 #include "cx_lex.h"
 
@@ -33,11 +34,10 @@ void static safe_free(void *ptr)
 	if(ptr) free(ptr);
 }
 
-enum CX_CONTEXTS {CX_CTX_NORMAL, CX_CTX_TAG};
-
 
 %%CxParser component_list cx_lex
-union {
+struct {
+	int		type;
 	char		*str;
 	CxComponent	comp;
 	CxComponentList	complist;
@@ -72,21 +72,28 @@ component_list:
 	;
 
 component:
-	OPEN ID attr_list component_close {
+	{ self->extra->context = CX_CTX_NORMAL; }
+	OPEN {
+		self->extra->context = CX_CTX_TAG;
+	} ID attr_list component_close {
 		result.comp = cxComponentNew(terms[1].str, NULL, terms[3].complist);
 		result.comp->attrlist = terms[2].attrlist;
 		safe_free(terms[1].str);
 	}
 	| CODERAW {
-		result.comp = cxComponentNew("CODE", terms[0].str, NULL);
+		result.comp = cxComponentNew("CODERAW", terms[0].str, NULL);
 		safe_free(terms[0].str);
 	}
-	| CODETEXT {
-		result.comp = cxComponentNew("TEXT", terms[0].str, NULL);
+	| CODEELEMENT {
+		result.comp = cxComponentNew("CODEELEMENT", terms[0].str, NULL);
 		safe_free(terms[0].str);
 	}
 	| CODETEXTF {
 		result.comp = cxComponentNew("TEXTF", terms[0].str, NULL);
+		safe_free(terms[0].str);
+	}
+	| RAWTEXT {
+		result.comp = cxComponentNew("TEXTRAW", terms[0].str, NULL);
 		safe_free(terms[0].str);
 	}
 	;
@@ -95,7 +102,9 @@ component_close:
 	SLASHCLOSE {
 		result.complist = NULL;
 	}
-	| CLOSE component_list OPENSLASH ID CLOSE {
+	| CLOSE component_list OPENSLASH {
+		self->extra->context = CX_CTX_TAG;
+	} ID CLOSE {
 		result.complist = terms[1].complist;
 	}
 	;
@@ -112,23 +121,31 @@ attr_list:
 	;
 
 attr:
-	ID EQUAL expr {
-		result.attr = cxAttributeNew(terms[0].str, terms[2].str);
+	ID EQUAL attrexpr {
+		result.attr = cxAttributeNew(terms[0].str, terms[2].type, terms[2].str);
 		safe_free(terms[0].str);
 		safe_free(terms[2].str);
 	}
 	;
 
-expr:
+attrexpr:
 	STRING {
+		result.type = CX_ATTR_EXPR_TYPE_STRING;
 		result.str = strf("\"%s\"",terms[0].str); 
 		free(terms[0].str);
 	}
 	| CODERAW {
+		result.type = CX_ATTR_EXPR_TYPE_CODERAW;
+		result.str = strdup(terms[0].str); 
+		free(terms[0].str);
+	}
+	| CODETEXTF {
+		result.type = CX_ATTR_EXPR_TYPE_CODETEXTF;
 		result.str = strdup(terms[0].str); 
 		free(terms[0].str);
 	}
 	| TKNULL {
+		result.type = CX_ATTR_EXPR_TYPE_NULL;
 		result.str = NULL;
 	}
 	;

@@ -11,7 +11,7 @@ static void printIndent(FILE *fp, int indent, char *tab)
 	}
 }
 
-CxAttribute cxAttributeNew(char *name, char *value)
+CxAttribute cxAttributeNew(char *name, int type, char *value)
 {
 CxAttribute self;
 
@@ -20,6 +20,7 @@ CxAttribute self;
 	if((self=malloc(sizeof(*(CxAttribute)0)))==NULL) return NULL;
 
 	self->name  = strdup(name);
+	self->type  = type;
 	self->value = value ? strdup(value) : NULL;
 
 	return self;
@@ -149,11 +150,39 @@ void cxComponentListPrint(CxComponentList self, FILE *fp, int indent)
 // -----------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------
 
+void cxComponentGenCodeTextRaw(FILE *fp, char *text)
+{
+int ch;
+
+	fputc('"', fp);
+
+	while(ch=*text){
+		if(ch=='\n'){
+			fputs("\\n", fp);
+		}else{
+			fputc(ch, fp);
+		}
+		text++;
+	}
+
+	fputc('"', fp);
+	
+}
+
 void cxAttributeGenCode(CxAttribute self, FILE *fp, int indent)
 {
 	if(self==NULL) return;
 	//printIndent(fp, indent, " ");
-	fprintf(fp, ",heAttrNew(\"%s\",%s)", self->name, self->value);
+
+	if(self->type == CX_ATTR_EXPR_TYPE_STRING){
+		fprintf(fp, ",heAttrNew(\"%s\",%s)", self->name, self->value);
+	}else if(self->type == CX_ATTR_EXPR_TYPE_CODERAW){
+		fprintf(fp, ",heAttrNew(\"%s\",%s)", self->name, self->value);
+	}else if(self->type == CX_ATTR_EXPR_TYPE_CODETEXTF){
+		fprintf(fp, ",heAttrNewf(\"%s\",%s)", self->name, self->value);
+	}else if(self->type == CX_ATTR_EXPR_TYPE_NULL){
+		fprintf(fp, ",heAttrNew(\"%s\",%s)", self->name, self->value);
+	}
 }
 
 void cxAttributeListGenCode(CxAttributeList self, FILE *fp, int indent)
@@ -175,12 +204,22 @@ void cxComponentGenCode(CxComponent self, FILE *fp, int indent)
 
 	fprintf(fp, "\n");
 	printIndent(fp, indent, " ");
-	if(!strcmp(self->face,"CODE")){
-		fprintf(fp, " %s \n", self->code);
-	}else if(!strcmp(self->face,"TEXT")){
+	//
+	// A CODE	is expected to be a expression resolving to a char *
+	// A CODELEMENT is expected to be a expression resolving to a He
+	// A TEXTF	is expected to be a parameters list that can be supplied to a strf call
+	//
+	if(!strcmp(self->face,"CODERAW")){
 		fprintf(fp, "heText(%s)\n", self->code);
+	}else if(!strcmp(self->face,"CODEELEMENT")){
+		fprintf(fp, " %s \n", self->code);
 	}else if(!strcmp(self->face,"TEXTF")){
 		fprintf(fp, "heTextf(%s)\n", self->code);
+	}else if(!strcmp(self->face,"TEXTRAW")){
+		fprintf(fp, "heText(\n");
+		cxComponentGenCodeTextRaw(fp, self->code);
+		//fprintf(fp, " \"%s\" ", self->code);
+		fprintf(fp, ")\n");
 	}else {
 		fprintf(fp, "heNew(\"%s\"", self->face);
 		cxAttributeListGenCode(self->attrlist, fp, indent);

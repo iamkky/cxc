@@ -1,7 +1,8 @@
 #ifndef _CXCOMPONENT_H_
 #define _CXCOMPONENT_H_
 
-enum CxObjects	{CXCOMPONENT=10, CXCOMPONENTLIST, CXATTRIBUTE, CXATTRIBUTELIST};
+enum CxObjects		{CXCOMPONENT=10, CXCOMPONENTLIST, CXATTRIBUTE, CXATTRIBUTELIST};
+enum CxAttrExprTypes	{CX_ATTR_EXPR_TYPE_CODERAW=1, CX_ATTR_EXPR_TYPE_STRING, CX_ATTR_EXPR_TYPE_CODETEXTF, CX_ATTR_EXPR_TYPE_NULL};
 
 typedef struct CxAttribute_struct *CxAttribute;
 typedef struct CxAttributeList_struct *CxAttributeList;
@@ -10,6 +11,7 @@ typedef struct CxComponentList_struct *CxComponentList;
 
 struct CxAttribute_struct{
 	int		magic;
+	int		type;
 	char		*name;
 	char		*value;
 };
@@ -34,7 +36,7 @@ struct CxComponentList_struct{
 	CxComponentList	next;
 };
 
-CxAttribute cxAttributeNew(char *name, char *value);
+CxAttribute cxAttributeNew(char *name, int type, char *value);
 void cxAttributeFree(CxAttribute self);
 void cxAttributePrint(CxAttribute self, FILE *fp, int indent);
 

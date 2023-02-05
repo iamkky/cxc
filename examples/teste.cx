@@ -1,0 +1,90 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <abd/string.h>
+#include <helium/He.h>
+
+
+char *func_returning_string(int number)
+{
+char *text;
+
+	if((text = malloc(128))==NULL) return NULL;
+	snprintf(text, 128, "teste_%d", number);
+	
+	return text;
+}
+
+He example1(char *text, int number)
+{
+	return {%
+	<div>
+		<div class="clase_one">
+			{ "First" }
+		</div>
+		<div class={"clase_two"}>
+			{ "Second" }
+		</div>
+		<div class={text}>
+			{ "Third" }
+		</div>
+		<div class={{ "%d", number }}>
+			{ "Fourth" }
+		</div>
+		<div class={ func_returning_string(number) } >
+			{ "Fifth" }
+		</div>
+	</div>
+	%};
+}
+
+
+
+He this_is_love()
+{
+He child = heText("This is Love");
+char *text = "This is Love";
+
+	return {%
+	<div>
+		<div>
+		</div>
+		<div>
+			[ child ]
+		</div>
+		<div>
+			{ text }
+		</div>
+		<div>
+			{ "This is Love" }
+		</div>
+		<div>
+			{{ "%s", "This is Love" }}
+		</div>
+	</div>
+	%};
+}
+
+He this_is_love_all_of_them()
+{
+He child = heText("This is Love");
+char *text = "This is Love";
+
+	return {%
+	<div>
+		<div>
+			[ child ]
+			{ text }
+			{ "This is Love" }
+			{{ "%s", "This is Love"  }}
+		</div>
+	</div>
+	%};
+}
+
+
+int main()
+{
+	example1("test", 33);
+	this_is_love();
+	this_is_love_all_of_them();
+}
