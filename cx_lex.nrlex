@@ -196,8 +196,8 @@ int  size, count;
 %%cx_lex CxParserType
 
 %define D	0-9
-%define i	A-Za-z_
-%define I	0-9A-Za-z_
+%define i	A-Za-z_\-
+%define I	0-9A-Za-z_\-
 
 NULL		: value->str = NULL; return TKNULL;
 </		: value->str = NULL; return OPENSLASH;
