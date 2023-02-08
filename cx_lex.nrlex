@@ -54,6 +54,17 @@ int  level, string, character, escaped;
 	return tmp;
 }
 
+static char *getParamList(char *input, int *cursor, int *lcount, char **line_start)
+{
+char	*code;
+int	count;
+
+	code = getCode(input, &count, '(', ')', lcount, line_start);
+	(*cursor) += count;
+
+	return code;
+}
+
 static char *getCodeRaw(char *input, int *cursor, int *lcount, char **line_start)
 {
 char	*code;
@@ -210,6 +221,7 @@ NULL		: value->str = NULL; return TKNULL;
 {		: value->str = getCodeRaw(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODERAW;
 [		: value->str = getCodeText(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODEELEMENT;
 \i\I*		: if(((CxParserExtraDataType *)extra)->context != CX_CTX_TAG) ABORT; value->str = nrDupToken(input,size); return ID;
+(		: if(((CxParserExtraDataType *)extra)->context != CX_CTX_TAG) ABORT; value->str = getParamList(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return PARAMLIST;
 \s		: 
 \n		: ((CxParserExtraDataType *)extra)->lnumber += 1; ((CxParserExtraDataType *)extra)->line_start = input + 1;
 \t		: 

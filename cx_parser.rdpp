@@ -75,8 +75,12 @@ component:
 	{ self->extra->context = CX_CTX_NORMAL; }
 	OPEN {
 		self->extra->context = CX_CTX_TAG;
-	} ID attr_list component_close {
-		result.comp = cxComponentNew(terms[1].str, NULL, terms[3].complist);
+	} tagid  attr_list component_close {
+		if ((result.type = terms[1].type) == CX_COMPONENT_TAG) {
+			result.comp = cxComponentNew(terms[1].str, NULL, terms[3].complist);
+		}else{
+			result.comp = cxComponentNew("FUNCTIONCALL", terms[1].str, terms[3].complist);
+		};
 		result.comp->attrlist = terms[2].attrlist;
 		safe_free(terms[1].str);
 	}
@@ -95,6 +99,32 @@ component:
 	| RAWTEXT {
 		result.comp = cxComponentNew("TEXTRAW", terms[0].str, NULL);
 		safe_free(terms[0].str);
+	}
+	;
+
+tagid:
+	ID function_call {
+		if(terms[1].str == NULL) {
+			result.type = CX_COMPONENT_TAG;
+			result.str = terms[0].str;
+		}else{
+			result.type = CX_COMPONENT_FUNCTIONCALL;
+			result.str = malloc(strlen(terms[0].str) + strlen(terms[1].str) + 2);
+			strcpy(result.str, terms[0].str);
+			strcat(result.str, "(");
+			strcat(result.str, terms[1].str);
+			safe_free(terms[0].str);
+			safe_free(terms[1].str);
+		}
+	}
+	;
+
+function_call:
+	PARAMLIST {
+		result.str = terms[0].str;
+	}
+	| {
+		result.str = NULL;
 	}
 	;
 

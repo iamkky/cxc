@@ -74,12 +74,12 @@ int size;
 	fprintf(stderr,"Error: Backtracking failed:  %d (%s)\n", nonterminal, Rdpp_CxParserNonterminals_Names[nonterminal-10000]);
 }
 
-int processFragment(FILE *fpout, char *p, int size, CxParserExtraDataType *extra)
+int processFragment(FILE *fpout, char *p, CxParserExtraDataType *extra)
 {
 CxParser		cx;
 CxComponentList		list;
 int			result;
-int			count;
+int			cursor;
 
 	if (optVerbose) fprintf(stderr,"Fragment found %d: >%-20.20s<\n", extra->lnumber, p);
 	cx = CxParserNew(p, extra);	
@@ -88,10 +88,10 @@ int			count;
 	CxParserSetBacktrackFail(cx, backtrackFail_handler);
 	
 	result = CxParserParse(cx);
+	cursor = cx->cursor;
 		
 	if(optVerbose){
-		fprintf(stdout,"Input Size: %d\n", size);
-		fprintf(stdout,"cursor: %d\n", cx->cursor);
+		fprintf(stdout,"cursor: %d\n", cursor);
 		fprintf(stdout,"Last Token: %d\n", cx->currToken);
 	}
 			
@@ -101,7 +101,6 @@ int			count;
 		//fprintf(stdout,"\nCode:\n");
 		list = cx->value[0].complist;
 		cxComponentListGenCode(list, fpout, 0);
-		p += (count = cx->cursor);
 	}else{
 		fprintf(stderr,"Failed to parse line %d\n", extra->lnumber);
 	 	printLine(stderr, extra->line_start);
@@ -109,7 +108,7 @@ int			count;
 	
 	CxParserFree(cx);
 		
-	return count;
+	return cursor;
 }
 
 FILE *openOutputFile(char *source, char *sext, char *dext, int check_source_ext)
@@ -171,6 +170,10 @@ int			size, fdin;
 
 	if((fpout=openOutputFile(filename, ".cx", ".c", 1))==NULL) return -1;
 
+	if(optVerbose){
+		fprintf(stdout,"Input Size: %d\n", size);
+	}
+
 	p = buffer;
 
 	extra.lnumber = 1;
@@ -184,7 +187,7 @@ int			size, fdin;
 		case ST_SCANNING:
 			if(*p=='{' && *(p+1)=='%'){
 				p += 2;
-				p += processFragment(fpout, p, size, &extra);
+				p += processFragment(fpout, p, &extra);
 
 				if(*p=='%' && *(p+1)=='}'){
 					p += 2;

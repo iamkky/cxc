@@ -218,9 +218,20 @@ void cxComponentGenCode(CxComponent self, FILE *fp, int indent)
 	}else if(!strcmp(self->face,"TEXTRAW")){
 		fprintf(fp, "heText(\n");
 		cxComponentGenCodeTextRaw(fp, self->code);
-		//fprintf(fp, " \"%s\" ", self->code);
 		fprintf(fp, ")\n");
-	}else {
+	}else if(!strcmp(self->face,"FUNCTIONCALL")){
+		fprintf(fp, "%s", self->code);
+		cxAttributeListGenCode(self->attrlist, fp, indent);
+		if(self->child) {
+			fprintf(fp, ",");
+			cxComponentListGenCode(self->child, fp, indent + 1);
+			fprintf(fp, "\n");
+			printIndent(fp, indent, " ");
+			fprintf(fp, ",NULL)");
+		}else{
+			fprintf(fp, ",NULL)");
+		}
+	}else{
 		fprintf(fp, "heNew(\"%s\"", self->face);
 		cxAttributeListGenCode(self->attrlist, fp, indent);
 		if(self->child) {
