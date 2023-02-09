@@ -37,24 +37,6 @@ He	children;
 	%};
 }
 
-He mkForm(char *action, char *method, ...)
-{
-va_list	args;
-He	children;
-
-	va_start(args, method);
-	children = heListv(args);
-	va_end(args);
-
-	return  {%
-	<form action={action} method={method}>
-		<table>
-			<tbody> [ children ] </tbody>
-		</table>
-	</form>
-	%};
-}
-
 He mkFormLine(char *label, He field)
 {
 
@@ -63,6 +45,32 @@ He mkFormLine(char *label, He field)
 	}else{
 		return {% <tr class="formline"> <td colspan="2"> [ field ] </td> </tr> %};
 	}
+}
+
+He mkFormTitle(He content)
+{
+	return mkFormLine(NULL, {% <div class="formtitle"> [ content ] </div> %});
+}
+
+He mkForm(char *action, char *method, char *title, ...)
+{
+va_list	args;
+He	children;
+
+	va_start(args, title);
+	children = heListv(args);
+	va_end(args);
+
+	return  {%
+	<div class="formclass">
+		<form action={action} method={method}>
+			[ mkFormTitle(heText(title)) ]
+			<table>
+				<tbody> [ children ] </tbody>
+			</table>
+		</form>
+	</div>
+	%};
 }
 
 He mkFormFieldButton(char *type, ...)
@@ -76,12 +84,6 @@ He	children;
 
 	return mkFormLine(NULL, {% <button class="input" type={type} > [ children ] </button> %});
 }
-
-He mkFormTitle(He content)
-{
-	return mkFormLine(NULL, {% <div class="formtitle"> [ content ] </div> %});
-}
-
 
 He mkFormFieldText(char *label, char *name, char *size)
 {
@@ -155,8 +157,7 @@ char *query_string;
 		</div>
 		%},
 		mkCenterBox("noname",
-			mkForm("form", "GET",
-				mkFormTitle(heText("Example Form")),
+			mkForm("form", "GET", "Example Form",
 				mkFormFieldHidden("id", "0"),
 				mkFormFieldText("Name:", "name", "20"),
 				mkFormFieldText("Age:", "age", "20"),
