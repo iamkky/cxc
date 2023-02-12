@@ -13,7 +13,7 @@ form2: form2.o
 	$(CC) $(LDFLAGS) -o form2 form2.o -lhelium -labd
 
 clean:
-	rm -f *.o teste form 
+	rm -f *.o teste form form2 form.c form2.c
 
 
 

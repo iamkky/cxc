@@ -18,9 +18,7 @@ He mkPage(char *title, ...)
 va_list	args;
 He	children;
 
-	va_start(args, title);
-	children = heListv(args);
-	va_end(args);
+	children = HE_GET_CHILDREN(title);
 
 	return {%
 	<html>
@@ -57,9 +55,7 @@ He mkForm(char *action, char *method, char *title, ...)
 va_list	args;
 He	children;
 
-	va_start(args, title);
-	children = heListv(args);
-	va_end(args);
+	children = HE_GET_CHILDREN(title);
 
 	return  {%
 	<div class="formclass">
@@ -78,9 +74,7 @@ He mkFormFieldButton(char *type, ...)
 va_list	args;
 He	children;
 
-	va_start(args, type);
-	children = heListv(args);
-	va_end(args);
+	children = HE_GET_CHILDREN(type);
 
 	return mkFormLine(NULL, {% <button class="input" type={type} > [ children ] </button> %});
 }
@@ -129,9 +123,7 @@ He mkCenterBox(char *name, ...)
 va_list	args;
 He	children;
 
-	va_start(args, name);
-	children = heListv(args);
-	va_end(args);
+	children = HE_GET_CHILDREN(name);
   
 	return  {%
 	<div class="centerbox">
