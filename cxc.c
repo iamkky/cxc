@@ -52,6 +52,39 @@ char *buffer, *tmp;
 	return buffer;
 }
 
+FILE *openOutputFile(char *source, char *sext, char *dext, int check_source_ext)
+{
+FILE *fout;
+char *output;
+int  slen, sextlen, dextlen;
+
+	if(source==NULL) return NULL;
+	if(sext==NULL) return NULL;
+	if(dext==NULL) return NULL;
+
+	slen = strlen(source);
+	sextlen = strlen(sext);
+	if(slen<=sextlen) return NULL;
+	
+	if(check_source_ext && strcmp(sext, source+slen-sextlen)) {
+		fprintf(stderr,"Input file %s has no %s extension\n", source, sext);
+		return NULL;
+	}
+
+	dextlen = strlen(dext);
+
+	if((output = malloc(slen - sextlen + dextlen + 1))==NULL) return NULL;
+	strncpy(output, source, slen - sextlen);
+	strcpy(output + slen - sextlen, dext);	
+	
+	fout=fopen(output,"w");
+	if(fout==NULL) fprintf(stderr,"Could not open output file: %s\n", output);
+
+	free(output);
+	
+	return fout;
+}
+
 int printLine(FILE *fp, char *line)
 {
 	while(*line!=0 && *line!='\n'){
@@ -111,40 +144,6 @@ int			cursor;
 	return cursor;
 }
 
-FILE *openOutputFile(char *source, char *sext, char *dext, int check_source_ext)
-{
-FILE *fout;
-char *output;
-int  slen, sextlen, dextlen;
-
-	if(source==NULL) return NULL;
-	if(sext==NULL) return NULL;
-	if(dext==NULL) return NULL;
-
-	slen = strlen(source);
-	sextlen = strlen(sext);
-	if(slen<=sextlen) return NULL;
-	
-	if(check_source_ext && strcmp(sext, source+slen-sextlen)) {
-		fprintf(stderr,"Input file %s has no %s extension\n", source, sext);
-		return NULL;
-	}
-
-	dextlen = strlen(dext);
-
-	if((output = malloc(slen - sextlen + dextlen + 1))==NULL) return NULL;
-	strncpy(output, source, slen - sextlen);
-	strcpy(output + slen - sextlen, dext);	
-	
-	fout=fopen(output,"w");
-	if(fout==NULL) fprintf(stderr,"Could not open output file: %s\n", output);
-
-	free(output);
-	
-	return fout;
-}
-
-
 int processFile(char *filename)
 {
 CxParserExtraDataType	extra;
@@ -178,16 +177,23 @@ int			size, fdin;
 
 	extra.lnumber = 1;
 	extra.line_start = buffer;
-	extra.source = NULL;
+	extra.source = filename;
 
 	state = ST_SCANNING;
+
+	fprintf(fpout,"#line 1 \"%s\"\n", filename);
 
 	while(*p!=0){
 		switch(state){
 		case ST_SCANNING:
 			if(*p=='{' && *(p+1)=='%'){
 				p += 2;
+
+				fprintf(fpout,"\n#line %d \"%s\"\n", extra.lnumber, filename);
+
 				p += processFragment(fpout, p, &extra);
+
+				fprintf(fpout,"\n#line %d \"%s\"\n", extra.lnumber, filename);
 
 				if(*p=='%' && *(p+1)=='}'){
 					p += 2;

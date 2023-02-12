@@ -41,6 +41,18 @@ void cxAttributePrint(CxAttribute self, FILE *fp, int indent)
 	fprintf(fp, "Attr: %p %s %s\n", self, self->name, self->value);
 }
 
+void cxAttributeSetSourceFile(CxAttribute self, char *file)
+{
+	if(self==NULL) return;
+	self->source_file = file;
+}
+
+void cxAttributeSetSourceLine(CxAttribute self, int line)
+{
+	if(self==NULL) return;
+	self->source_line = line;
+}
+
 CxAttributeList cxAttributeListNew()
 {
 CxAttributeList self;
@@ -75,15 +87,17 @@ void cxAttributeListPrint(CxAttributeList self, FILE *fp, int indent)
 }
 
 
-CxComponent cxComponentNew(char *face, char *code, CxComponentList child)
+CxComponent cxComponentNew(int type, char *face, char *code, CxComponentList child)
 {
 CxComponent self;
 
-	if(face==NULL) return NULL;
+	if(type==CX_COMPONENT_TAG && face==NULL) return NULL;
+	if(type!=CX_COMPONENT_TAG && code==NULL) return NULL;
 
 	if((self=malloc(sizeof(*(CxComponent)0)))==NULL) return NULL;
 
-	self->face  = strdup(face);
+	self->type  = type;
+	self->face  = face ? strdup(face) : NULL;
 	self->child = child;
 	self->attrlist = NULL;
 	self->code = code ? strdup(code) : NULL;
@@ -111,6 +125,18 @@ void cxComponentPrint(CxComponent self, FILE *fp, int indent)
 	fprintf(fp, "Comp: %p %s\n", self, self->face);
 	cxAttributeListPrint(self->attrlist, fp, indent);
 	if(self->child) cxComponentListPrint(self->child, fp, indent + 1);
+}
+
+void cxComponentSetSourceFile(CxComponent self, char *file)
+{
+	if(self==NULL) return;
+	self->source_file = file;
+}
+
+void cxComponentSetSourceLine(CxComponent self, int line)
+{
+	if(self==NULL) return;
+	self->source_line = line;
 }
 
 CxComponentList cxComponentListNew()
@@ -172,7 +198,8 @@ int ch;
 void cxAttributeGenCode(CxAttribute self, FILE *fp, int indent)
 {
 	if(self==NULL) return;
-	//printIndent(fp, indent, " ");
+
+	fprintf(fp, "#line %d\n", self->source_line);
 
 	if(self->type == CX_ATTR_EXPR_TYPE_STRING){
 		fprintf(fp, ",heAttrNew(\"%s\",%s)", self->name, self->value);
@@ -189,6 +216,7 @@ void cxAttributeListGenCode(CxAttributeList self, FILE *fp, int indent)
 {
 	if(self==NULL) return;
 	cxAttributeGenCode(self->attribute, fp, indent + 1);
+	fprintf(fp, "\n");
 	if(self->next) {
 		cxAttributeListGenCode(self->next, fp, indent);
 	}
@@ -202,43 +230,41 @@ void cxComponentGenCode(CxComponent self, FILE *fp, int indent)
 		return;
 	}
 
-	fprintf(fp, "\n");
-	printIndent(fp, indent, " ");
+	fprintf(fp, "#line %d\n", self->source_line);
+	//fprintf(fp, "\n");
+	//printIndent(fp, indent, " ");
 	//
-	// A CODE	is expected to be a expression resolving to a char *
+	// A CODERAW	is expected to be a expression resolving to a char *
 	// A CODELEMENT is expected to be a expression resolving to a He
 	// A TEXTF	is expected to be a parameters list that can be supplied to a strf call
+	// A TEXT	is expected to be a expression resolving to a char *
 	//
-	if(!strcmp(self->face,"CODERAW")){
-		fprintf(fp, "heText(%s)\n", self->code);
-	}else if(!strcmp(self->face,"CODEELEMENT")){
-		fprintf(fp, " %s \n", self->code);
-	}else if(!strcmp(self->face,"TEXTF")){
-		fprintf(fp, "heTextf(%s)\n", self->code);
-	}else if(!strcmp(self->face,"TEXTRAW")){
+	if(self->type == CX_COMPONENT_CODE_RAW){
+		fprintf(fp, "heText(%s)", self->code);
+	}else if(self->type == CX_COMPONENT_CODE_ELEMENT){
+		fprintf(fp, " %s ", self->code);
+	}else if(self->type == CX_COMPONENT_TEXTF){
+		fprintf(fp, "heTextf(%s)", self->code);
+	}else if(self->type == CX_COMPONENT_TEXTRAW){
 		fprintf(fp, "heText(\n");
 		cxComponentGenCodeTextRaw(fp, self->code);
-		fprintf(fp, ")\n");
-	}else if(!strcmp(self->face,"FUNCTIONCALL")){
-		fprintf(fp, "%s", self->code);
+		fprintf(fp, ")");
+	}else if(self->type == CX_COMPONENT_FUNCTIONCALL){
+		fprintf(fp, "%s\n", self->code);
 		cxAttributeListGenCode(self->attrlist, fp, indent);
 		if(self->child) {
-			fprintf(fp, ",");
+			fprintf(fp, ",\n");
 			cxComponentListGenCode(self->child, fp, indent + 1);
-			fprintf(fp, "\n");
-			printIndent(fp, indent, " ");
 			fprintf(fp, ",NULL)");
 		}else{
 			fprintf(fp, ",NULL)");
 		}
 	}else{
-		fprintf(fp, "heNew(\"%s\"", self->face);
+		fprintf(fp, "heNew(\"%s\"\n", self->face);
 		cxAttributeListGenCode(self->attrlist, fp, indent);
 		if(self->child) {
-			fprintf(fp, ",");
+			fprintf(fp, ",\n");
 			cxComponentListGenCode(self->child, fp, indent + 1);
-			fprintf(fp, "\n");
-			printIndent(fp, indent, " ");
 			fprintf(fp, ",NULL)");
 		}else{
 			fprintf(fp, ",NULL)");
@@ -251,8 +277,9 @@ void cxComponentListGenCode(CxComponentList self, FILE *fp, int indent)
 	if(self==NULL) return;
 
 	cxComponentGenCode(self->component, fp, indent);
+	fprintf(fp, "\n");
 	if(self->next) {
-		fprintf(fp, ",");
+		fprintf(fp, ",\n");
 		cxComponentListGenCode(self->next, fp, indent);
 	}
 }

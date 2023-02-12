@@ -62,6 +62,7 @@ struct {
 
 component_list:
 	component component_list {
+	int		magic;
 		result.complist = cxComponentListNew();
 		if(terms[0].comp) result.complist->component = terms[0].comp;
 		if(terms[1].complist) result.complist->next = terms[1].complist;
@@ -76,28 +77,43 @@ component:
 	OPEN {
 		self->extra->context = CX_CTX_TAG;
 	} tagid  attr_list component_close {
-		if ((result.type = terms[1].type) == CX_COMPONENT_TAG) {
-			result.comp = cxComponentNew(terms[1].str, NULL, terms[3].complist);
+		result.type = terms[1].type;
+		if (result.type == CX_COMPONENT_TAG) {
+			result.comp = cxComponentNew(result.type, terms[1].str, NULL, terms[3].complist);
 		}else{
-			result.comp = cxComponentNew("FUNCTIONCALL", terms[1].str, terms[3].complist);
+			result.comp = cxComponentNew(result.type, NULL, terms[1].str, terms[3].complist);
 		};
+		cxComponentSetSourceFile(result.comp, self->extra->source);
+		cxComponentSetSourceLine(result.comp, self->extra->lnumber);
 		result.comp->attrlist = terms[2].attrlist;
 		safe_free(terms[1].str);
 	}
 	| CODERAW {
-		result.comp = cxComponentNew("CODERAW", terms[0].str, NULL);
+		result.type = CX_COMPONENT_CODE_RAW;
+		result.comp = cxComponentNew(result.type, NULL, terms[0].str, NULL);
+		cxComponentSetSourceFile(result.comp, self->extra->source);
+		cxComponentSetSourceLine(result.comp, self->extra->lnumber);
 		safe_free(terms[0].str);
 	}
 	| CODEELEMENT {
-		result.comp = cxComponentNew("CODEELEMENT", terms[0].str, NULL);
+		result.type = CX_COMPONENT_CODE_ELEMENT;
+		result.comp = cxComponentNew(result.type, NULL, terms[0].str, NULL);
+		cxComponentSetSourceFile(result.comp, self->extra->source);
+		cxComponentSetSourceLine(result.comp, self->extra->lnumber);
 		safe_free(terms[0].str);
 	}
 	| CODETEXTF {
-		result.comp = cxComponentNew("TEXTF", terms[0].str, NULL);
+		result.type = CX_COMPONENT_TEXTF;
+		result.comp = cxComponentNew(result.type, NULL, terms[0].str, NULL);
+		cxComponentSetSourceFile(result.comp, self->extra->source);
+		cxComponentSetSourceLine(result.comp, self->extra->lnumber);
 		safe_free(terms[0].str);
 	}
 	| RAWTEXT {
-		result.comp = cxComponentNew("TEXTRAW", terms[0].str, NULL);
+		result.type = CX_COMPONENT_TEXTRAW;
+		result.comp = cxComponentNew(result.type, NULL, terms[0].str, NULL);
+		cxComponentSetSourceFile(result.comp, self->extra->source);
+		cxComponentSetSourceLine(result.comp, self->extra->lnumber);
 		safe_free(terms[0].str);
 	}
 	;
@@ -153,6 +169,8 @@ attr_list:
 attr:
 	ID EQUAL attrexpr {
 		result.attr = cxAttributeNew(terms[0].str, terms[2].type, terms[2].str);
+		cxAttributeSetSourceFile(result.attr, self->extra->source);
+		cxAttributeSetSourceLine(result.attr, self->extra->lnumber);
 		safe_free(terms[0].str);
 		safe_free(terms[2].str);
 	}
