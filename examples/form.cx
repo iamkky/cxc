@@ -35,19 +35,23 @@ He	children;
 	%};
 }
 
-He mkFormLine(char *label, He field)
+He FormLine(char *label, ...)
 {
+va_list	args;
+He	children;
+
+	children = HE_GET_CHILDREN(label);
 
 	if(label){
-		return {% <tr class="formline"> <td> { label } </td> <td> [ field ] </td> </tr> %};
+		return {% <tr class="formline"> <td> { label } </td> <td> [ children ] </td> </tr> %};
 	}else{
-		return {% <tr class="formline"> <td colspan="2"> [ field ] </td> </tr> %};
+		return {% <tr class="formline"> <td colspan="2"> [ children ] </td> </tr> %};
 	}
 }
 
-He mkFormTitle(He content)
+He mkFormTitle(char *title, ...)
 {
-	return mkFormLine(NULL, {% <div class="formtitle"> [ content ] </div> %});
+	return {% <FormLine(NULL)> <div class="formtitle"> { title } </div> </FormLine> %};
 }
 
 He mkForm(char *action, char *method, char *title, ...)
@@ -60,7 +64,7 @@ He	children;
 	return  {%
 	<div class="formclass">
 		<form action={action} method={method}>
-			[ mkFormTitle(heText(title)) ]
+			<mkFormTitle(title)/>
 			<table>
 				<tbody> [ children ] </tbody>
 			</table>
@@ -76,20 +80,20 @@ He	children;
 
 	children = HE_GET_CHILDREN(type);
 
-	return mkFormLine(NULL, {% <button class="input" type={type} > [ children ] </button> %});
+	return {% <FormLine(NULL)> <button class="input" type={type} > [ children ] </button> </FormLine>%};
 }
 
-He mkFormFieldText(char *label, char *name, char *size)
+He mkFormFieldText(char *label, char *name, char *size, ...)
 {
-	return mkFormLine(label, {% <input class="input" name={ name } size={ size } /> %});
+	return {% <FormLine(label)> <input class="input" name={ name } size={ size } /> </FormLine>%};
 }
 
-He mkFormFieldHidden(char *name, char *size)
+He mkFormFieldHidden(char *name, char *size, ...)
 {
 	return {% <input type="hidden" name={ name } /> %};
 }
 
-He mkFormFieldSelect(char *label, char *name, char **options, int n_options)
+He mkFormFieldSelect(char *label, char *name, char **options, int n_options, ...)
 {
 He select;
 
@@ -98,10 +102,10 @@ He select;
 	for(int c=0; c<n_options; c++){
 		heAddChild(select, {% <option value={options[c]}> {options[c]} </option> %});
 	}
-	return mkFormLine(label, select);
+	return {% <FormLine(label)> [select] </FormLine> %};
 }
 
-He mkFormFieldRadio(char *label, char **options, int n_options)
+He mkFormFieldRadio(char *label, char **options, int n_options, ...)
 {
 He div;
 
@@ -112,13 +116,12 @@ He div;
 	for(int c=0; c<n_options; c+=2){
 		heAddChild(div, {% <input class="radiobutton" type="radio" name={options[c]} /> %});
 		heAddChild(div, {% {options[c+1]} %});
-		//heAddChild(div, heText(options[c+1]));
 	}
 	
-	return mkFormLine(label, div);
+	return {% <FormLine(label)> [div] </FormLine> %};
 }
 
-He mkCenterBox(char *name, ...)
+He CenterBox(char *name, ...)
 {
 va_list	args;
 He	children;
@@ -142,26 +145,23 @@ char *query_string;
 
 	query_string = getenv("QUERY_STRING");
 
-	return mkPage("Form Example", 
-		{%
+	return {%
+	<mkPage("Form Example")> 
 		<div Style="color: yellow;">
 			Last Query String: { query_string }
 		</div>
-		%},
-		mkCenterBox("noname",
-			mkForm("form", "GET", "Example Form",
-				mkFormFieldHidden("id", "0"),
-				mkFormFieldText("Name:", "name", "20"),
-				mkFormFieldText("Age:", "age", "20"),
-				mkFormFieldSelect("Continent:", "continent", continents, 5),
-				mkFormFieldRadio("Money option:", money_options, 3),
-				mkFormFieldButton("submit", heText("Submit"), NULL),
-				NULL
-			),
-			NULL
-		),
-		NULL
-	);
+		<CenterBox("noname")>
+			<mkForm("form", "GET", "Example Form")>
+				<mkFormFieldHidden("id", "0") />
+				<mkFormFieldText("Name:", "name", "20") />
+				<mkFormFieldText("Age:", "age", "20") />
+				<mkFormFieldSelect("Continent:", "continent", continents, 5) />
+				<mkFormFieldRadio("Money option:", money_options, 3) />
+				<mkFormFieldButton("submit", heText("Submit")) />
+			</mkForm>
+		</CenterBox>
+	</mkPage>
+	%};
 }
 
 int main(void)

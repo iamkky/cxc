@@ -1,0 +1,13 @@
+:root, :host {
+  --awtk-font: Inter,sans-serif;
+  --awtk-background: black;
+  --awtk-border-radius: 0.375rem;
+  --awtk-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --awtk-form-font-weight: 600;
+  --awtk-input-height: 2.5rem;
+  --awtk-form-fontsize: 1rem;
+  --awtk-form-input-height-pad: 0rem;
+  --awtk-form-input-height-margin: 0rem;
+  --awtk-input-color: #2C7A7B;
+  --awtk-input-background: transparent;
+}

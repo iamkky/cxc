@@ -14,5 +14,9 @@ He mkDiv(char *class, He content)
 
 He DivWithImage(char *class, char *src)
 {
-	return mkDiv(class, mkImg(src));
+	return {%
+		<mkDiv(class)>
+			<mkImg(src) />
+		</mkDiv>
+	%}
 }

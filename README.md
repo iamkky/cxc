@@ -21,7 +21,11 @@ example:
 
 	He DivWithImage(char *class, char *src)
 	{
-		return mkDiv(class, mkImg(src));
+		return {%
+			<mkDiv(class)>
+				<mkImg(src) />
+			</mkDiv>
+		%}
 	}
 
 compiles to:
@@ -42,5 +46,5 @@ compiles to:
 
 	He DivWithImage(char *class, char *src)
 	{
-		return mkDiv(class, mkImg(src));
+		return mkDiv(class, mkImg(src,NULL),NULL);
 	}

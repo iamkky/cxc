@@ -4,7 +4,7 @@ CC = gcc
 CFLAGS+=-Wall
 LDFLAGS+=-labd -lhelium
 
-all: form form2
+all: form form2 example
 
 form: form.o
 	$(CC) $(LDFLAGS) -o form form.o -lhelium -labd
