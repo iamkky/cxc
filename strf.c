@@ -27,5 +27,3 @@ int	 size;
 
 	return temp;
 }
-
-// EOF
