@@ -167,8 +167,28 @@ attr_list:
 	;
 
 attr:
-	ID EQUAL attrexpr {
+	{
+		//
+		// Check if it is an event name
+		//
+		if(checkToken(self, ID)){
+			if(strcmp(self->currTokenValue.str,"onClick")==0) {
+				fprintf(stderr,"BREAK\n");
+				break;
+			}
+		}
+	} ID EQUAL attrexpr {
 		result.attr = cxAttributeNew(terms[0].str, terms[2].type, terms[2].str);
+		cxAttributeSetSourceFile(result.attr, self->extra->source);
+		cxAttributeSetSourceLine(result.attr, self->extra->lnumber);
+		safe_free(terms[0].str);
+		safe_free(terms[2].str);
+	}
+	| ID EQUAL ID PARAMLIST {
+		//
+		// This rule is equal to previous one. but the flow only reachs this rule if ID is a event name
+		//
+		result.attr = cxAttributeNew(terms[0].str, CX_ATTR_EVENT, terms[2].str);
 		cxAttributeSetSourceFile(result.attr, self->extra->source);
 		cxAttributeSetSourceLine(result.attr, self->extra->lnumber);
 		safe_free(terms[0].str);

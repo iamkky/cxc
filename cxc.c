@@ -97,7 +97,13 @@ int unexpected_handler(CxParser self, int token, int nonterminal)
 {
 int size;
 
-	fprintf(stderr,"Error: line %d: Expected: token: %d\n", self->extra->lnumber, token);
+	//fprintf(stderr,"Error: line %d: Expected: token: %d\n", self->extra->lnumber, token);
+	fprintf(stderr,"Error: line %d: Expected: token: %s [%d], in rule for %s\n",
+			self->extra->lnumber,
+			Rdpp_CxParserTerminals_Names[token-1000], 
+			token,
+			Rdpp_CxParserNonterminals_Names[nonterminal-10000]
+	);
 }
 
 int backtrackFail_handler(CxParser self, int nonterminal)

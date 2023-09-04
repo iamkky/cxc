@@ -201,14 +201,18 @@ void cxAttributeGenCode(CxAttribute self, FILE *fp, int indent)
 
 	fprintf(fp, "#line %d\n", self->source_line);
 
-	if(self->type == CX_ATTR_EXPR_TYPE_STRING){
+	switch(self->type){
+	case CX_ATTR_EXPR_TYPE_STRING:
+	case CX_ATTR_EXPR_TYPE_CODERAW:
+	case CX_ATTR_EXPR_TYPE_NULL:
 		fprintf(fp, ",heAttrNew(\"%s\",%s)", self->name, self->value);
-	}else if(self->type == CX_ATTR_EXPR_TYPE_CODERAW){
-		fprintf(fp, ",heAttrNew(\"%s\",%s)", self->name, self->value);
-	}else if(self->type == CX_ATTR_EXPR_TYPE_CODETEXTF){
+		break;
+	case CX_ATTR_EXPR_TYPE_CODETEXTF:
 		fprintf(fp, ",heAttrNewf(\"%s\",%s)", self->name, self->value);
-	}else if(self->type == CX_ATTR_EXPR_TYPE_NULL){
-		fprintf(fp, ",heAttrNew(\"%s\",%s)", self->name, self->value);
+		break;
+	case CX_ATTR_EVENT:
+		fprintf(fp, ",heAttrNewEvent(\"%s\", %s)", self->name, self->value);
+		break;
 	}
 }
 
