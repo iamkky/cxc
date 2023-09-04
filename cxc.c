@@ -15,11 +15,13 @@
 enum states {ST_SCANNING, ST_COMMENT_C, ST_COMMENT_CPP, ST_STRING};
 
 static int optVerbose = 0;
+static int optPreserveSuffixes = 0;
 
 void usage(char *argv0)
 {
 	fprintf(stdout, "%s [options] <file>\n", argv0);
 	fprintf(stdout, "\n");
+	fprintf(stdout, "  -p:\tPreserve original suffixes\n");
 	fprintf(stdout, "  -v:\tVerbose\n");
 	fprintf(stdout, "  -h:\thelp\n");
 }
@@ -52,7 +54,7 @@ char *buffer, *tmp;
 	return buffer;
 }
 
-FILE *openOutputFile(char *source, char *sext, char *dext, int check_source_ext)
+FILE *openOutputFile(char *source, char *sext, char *dext, int check_source_ext, int preserveSuffixes)
 {
 FILE *fout;
 char *output;
@@ -73,9 +75,15 @@ int  slen, sextlen, dextlen;
 
 	dextlen = strlen(dext);
 
-	if((output = malloc(slen - sextlen + dextlen + 1))==NULL) return NULL;
-	strncpy(output, source, slen - sextlen);
-	strcpy(output + slen - sextlen, dext);	
+	if(preserveSuffixes){
+		if((output = malloc(slen + dextlen + 1))==NULL) return NULL;
+		strcpy(output, source);
+		strcpy(output + slen, dext);	
+	}else{
+		if((output = malloc(slen - sextlen + dextlen + 1))==NULL) return NULL;
+		strncpy(output, source, slen - sextlen);
+		strcpy(output + slen - sextlen, dext);	
+	}
 	
 	fout=fopen(output,"w");
 	if(fout==NULL) fprintf(stderr,"Could not open output file: %s\n", output);
@@ -173,7 +181,7 @@ int			size, fdin;
 //	buffer = readToBuffer(0, 32768, 1, &bytes);
 //	buffer[bytes] = 0;
 
-	if((fpout=openOutputFile(filename, ".cx", ".c", 1))==NULL) return -1;
+	if((fpout=openOutputFile(filename, ".cx", ".c", 1, optPreserveSuffixes))==NULL) return -1;
 
 	if(optVerbose){
 		fprintf(stdout,"Input Size: %d\n", size);
@@ -278,6 +286,11 @@ int	argcount;
 		if(!strcmp(argv[argcount],"-v")){
 			argcount++;
 			optVerbose = 1;
+			continue;
+		}
+		if(!strcmp(argv[argcount],"-p")){
+			argcount++;
+			optPreserveSuffixes = 1;
 			continue;
 		}
 		if(!strcmp(argv[argcount],"-h")){

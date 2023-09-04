@@ -17,6 +17,7 @@ struct CxAttribute_struct{
 	int		type;
 	char		*name;
 	char		*value;
+	char		*paramlist;
 	char		*source_file;
 	int		source_line;
 };
@@ -43,6 +44,7 @@ struct CxComponentList_struct{
 
 CxAttribute cxAttributeNew(char *name, int type, char *value);
 void cxAttributeFree(CxAttribute self);
+void cxAttributeSetParamlist(CxAttribute self, char *value);
 void cxAttributePrint(CxAttribute self, FILE *fp, int indent);
 void cxAttributeSetSourceFile(CxAttribute self, char *file);
 void cxAttributeSetSourceLine(CxAttribute self, int line);

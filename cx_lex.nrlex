@@ -213,7 +213,7 @@ int  size, count;
 NULL		: value->str = NULL; return TKNULL;
 </		: value->str = NULL; return OPENSLASH;
 />		: value->str = NULL; return SLASHCLOSE;
-=		: value->str = NULL; return EQUAL;
+=		: if(((CxParserExtraDataType *)extra)->context != CX_CTX_TAG) ABORT; value->str = NULL; return EQUAL;
 <		: value->str = NULL; return OPEN;
 >		: value->str = NULL; return CLOSE;
 "		: value->str = getString(input, cursor, '\\', '\"'); return STRING;

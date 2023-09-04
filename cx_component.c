@@ -34,6 +34,14 @@ void cxAttributeFree(CxAttribute self)
 	free(self);
 }
 
+void cxAttributeSetParamlist(CxAttribute self, char *value)
+{
+	if(self==NULL) return;
+	if(self->name==NULL) return;
+
+	self->paramlist = value ? strdup(value) : NULL;
+}
+
 void cxAttributePrint(CxAttribute self, FILE *fp, int indent)
 {
 	if(self==NULL) return;
@@ -211,7 +219,7 @@ void cxAttributeGenCode(CxAttribute self, FILE *fp, int indent)
 		fprintf(fp, ",heAttrNewf(\"%s\",%s)", self->name, self->value);
 		break;
 	case CX_ATTR_EVENT:
-		fprintf(fp, ",heAttrNewEvent(\"%s\", %s)", self->name, self->value);
+		fprintf(fp, ",heAttrNewEvent(\"%s\", %s, %s)", self->name, self->value, self->paramlist);
 		break;
 	}
 }
