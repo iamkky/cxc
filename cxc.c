@@ -105,12 +105,15 @@ int unexpected_handler(CxParser self, int token, int nonterminal)
 {
 int size;
 
-	//fprintf(stderr,"Error: line %d: Expected: token: %d\n", self->extra->lnumber, token);
-	fprintf(stderr,"Error: line %d: Expected: token: %s [%d], in rule for %s\n",
+	fprintf(stderr,"Error: line %d: Expected: token: %d\n", self->extra->lnumber, token);
+	fprintf(stderr,"%s:%d: In rule for %s: Unexpected %s [%d], expected: %s [%d]\n",
+			self->extra->source,
 			self->extra->lnumber,
+			Rdpp_CxParserNonterminals_Names[nonterminal-10000],
+			Rdpp_CxParserTerminals_Names[self->currToken-1000], 
+			self->currToken,
 			Rdpp_CxParserTerminals_Names[token-1000], 
-			token,
-			Rdpp_CxParserNonterminals_Names[nonterminal-10000]
+			token
 	);
 }
 
