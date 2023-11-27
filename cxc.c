@@ -16,6 +16,7 @@ enum states {ST_SCANNING, ST_COMMENT_C, ST_COMMENT_CPP, ST_STRING};
 
 static int optVerbose = 0;
 static int optPreserveSuffixes = 0;
+static int optWasmMode = 0;
 
 void usage(char *argv0)
 {
@@ -195,6 +196,7 @@ int			size, fdin;
 	extra.lnumber = 1;
 	extra.line_start = buffer;
 	extra.source = filename;
+	extra.wasmMode = optWasmMode;
 
 	state = ST_SCANNING;
 
@@ -294,6 +296,11 @@ int	argcount;
 		if(!strcmp(argv[argcount],"-p")){
 			argcount++;
 			optPreserveSuffixes = 1;
+			continue;
+		}
+		if(!strcmp(argv[argcount],"-w")){
+			argcount++;
+			optWasmMode = 1;
 			continue;
 		}
 		if(!strcmp(argv[argcount],"-h")){

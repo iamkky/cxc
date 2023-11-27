@@ -220,8 +220,10 @@ NULL		: value->str = NULL; return TKNULL;
 {{		: value->str = getCodeTextf(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODETEXTF;
 {		: value->str = getCodeRaw(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODERAW;
 [		: value->str = getCodeText(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return CODEELEMENT;
-\i\I*		: if(((CxParserExtraDataType *)extra)->context != CX_CTX_TAG) ABORT; value->str = nrDupToken(input,size); return ID;
+((		: if(((CxParserExtraDataType *)extra)->context != CX_CTX_TAG) ABORT; value->str = NULL; return OBRACKET;
+))		: if(((CxParserExtraDataType *)extra)->context != CX_CTX_TAG) ABORT; value->str = NULL; return CBRACKET;
 (		: if(((CxParserExtraDataType *)extra)->context != CX_CTX_TAG) ABORT; value->str = getParamList(input, cursor, &(((CxParserExtraDataType *)extra)->lnumber), &(((CxParserExtraDataType *)extra)->line_start)); return PARAMLIST;
+\i\I*		: if(((CxParserExtraDataType *)extra)->context != CX_CTX_TAG) ABORT; value->str = nrDupToken(input,size); return ID;
 \s		: 
 \n		: ((CxParserExtraDataType *)extra)->lnumber += 1; ((CxParserExtraDataType *)extra)->line_start = input + 1;
 \t		: 
